@@ -1,0 +1,35 @@
+---
+alwaysApply: true
+---
+# HVAC Commissioning Logger - Project Architecture
+
+This is a Next.js 14 application for field HVAC commissioning and envelope testing with real-time engineering calculations.
+
+## Core Architecture
+- **Framework**: Next.js 14 with App Router and Server Components
+- **Database**: PostgreSQL via Prisma ORM (Supabase)
+- **Authentication**: NextAuth.js with email/password + Google OAuth
+- **UI**: TailwindCSS + shadcn/ui components
+- **File Storage**: S3-compatible (AWS S3 or Supabase Storage)
+- **PDF Generation**: React-PDF for professional reports
+
+## Directory Structure
+- [src/app](mdc:src/app) - Next.js App Router pages and API routes
+- [src/components](mdc:src/components) - Reusable React components
+- [src/lib](mdc:src/lib) - Utility functions, calculations, and configurations
+- [src/types](mdc:src/types) - TypeScript type definitions
+- [prisma/schema.prisma](mdc:prisma/schema.prisma) - Database schema and models
+
+## Data Hierarchy
+Projects → Areas → Sessions → Test Results
+- **Project**: Top-level container (e.g., "Lincoln Elementary School")
+- **Area**: Building section (e.g., "2023 Addition") 
+- **Session**: Field visit/test campaign
+- **Test Results**: Individual commissioning tests with calculations
+
+## Key Configuration Files
+- [prisma/schema.prisma](mdc:prisma/schema.prisma) - Database models and relationships
+- [src/lib/schemas.ts](mdc:src/lib/schemas.ts) - Zod validation schemas for all test types
+- [src/lib/calculations.ts](mdc:src/lib/calculations.ts) - HVAC engineering calculations
+- [src/lib/auth.ts](mdc:src/lib/auth.ts) - NextAuth.js configuration
+- [tailwind.config.ts](mdc:tailwind.config.ts) - TailwindCSS and dark mode setup

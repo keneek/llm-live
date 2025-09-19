@@ -1,0 +1,43 @@
+---
+description: HVAC engineering calculations and test types
+---
+# HVAC Commissioning Domain Knowledge
+
+This application implements professional HVAC commissioning and envelope testing procedures with real-time engineering calculations.
+
+## Test Type Categories
+
+### Envelope Tests (A1-A4)
+- **A1 BUILDING_PRESSURE**: Target 0.02-0.05 in. w.c. (inches water column)
+- **A2 PRESSURE_DECAY**: Envelope tightness over time  
+- **A3 RETURN_CURB_LEAKAGE**: Smoke testing for return air leaks
+- **A4 SLAB_WALL_MOISTURE**: Plastic sheet test and IR imaging
+
+### HVAC Tests (B1-B6)  
+- **B1 AIRFLOW_STATIC**: CFM measurements and static pressure
+- **B2 REFRIGERANT_CIRCUIT**: Superheat and subcooling analysis
+- **B3 COIL_PERFORMANCE**: Temperature/humidity across evaporator coil
+- **B4 FAN_EVAP_RECHECK**: Post-adjustment verification
+- **B5 ECONOMIZER_SEAL**: Damper leakage testing
+- **B6 DISTRIBUTION_MIXING**: Zone temperature/humidity uniformity
+
+## Key Engineering Calculations
+
+### CFM/Ton Ratios ([src/lib/calculations.ts](mdc:src/lib/calculations.ts))
+- **Target for dehumidification**: 350-400 CFM/ton
+- **Formula**: `supplyCFM / tons`
+- **Pass/Fail**: Automatic validation with recommendations
+
+### Dew Point Calculations  
+- **Formula**: Magnus formula from dry bulb temperature and relative humidity
+- **Supply air target**: 50-55°F for good dehumidification
+- **Used in**: Coil performance and distribution testing
+
+### Refrigerant Analysis
+- **Superheat**: Suction line temp - saturation temp at suction pressure
+- **Subcooling**: Saturation temp at liquid pressure - liquid line temp  
+- **Acceptable ranges**: 8-15°F (varies by outdoor conditions)
+- **Indicates**: Refrigerant charge level and system performance
+
+## Pass/Fail Criteria ([src/lib/test-computations.ts](mdc:src/lib/test-computations.ts))
+All test types have built-in acceptance criteria based on ASHRAE standards and industry best practices. The system automatically determines pass/fail status and provides actionable recommendations for failed tests.

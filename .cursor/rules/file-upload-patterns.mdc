@@ -1,0 +1,69 @@
+---
+globs: src/components/file-upload/*.tsx,src/lib/s3-client.ts,src/app/api/files/**/*.ts
+---
+# File Upload System & S3 Integration
+
+The application includes a comprehensive file upload system for commissioning evidence (photos, IR images, nameplates, documents).
+
+## File Upload Flow
+
+1. **Client requests presigned URL** via [src/app/api/files/upload/route.ts](mdc:src/app/api/files/upload/route.ts)
+2. **Direct upload to S3** using presigned URL (15-minute expiry)
+3. **Save metadata** to database via [src/app/api/files/route.ts](mdc:src/app/api/files/route.ts)
+
+## S3 Client Configuration
+
+[src/lib/s3-client.ts](mdc:src/lib/s3-client.ts) provides:
+- **Presigned URL generation** with organized folder structure
+- **File validation** (type, size limits up to 50MB)
+- **Auto-categorization** based on MIME type
+- **Folder organization**: `projects/{id}/sessions/{id}/tests/{id}/{category}`
+
+## File Categories
+
+- **PHOTO**: General photos
+- **IR_IMAGE**: Infrared thermal images
+- **NAMEPLATE**: Equipment nameplate photos
+- **DOCUMENT**: PDFs, spreadsheets, reports
+- **OTHER**: Miscellaneous files
+
+## Upload Components
+
+### FileUpload Component
+[src/components/file-upload/file-upload.tsx](mdc:src/components/file-upload/file-upload.tsx)
+- **Drag & drop** interface with react-dropzone
+- **Progress tracking** during upload
+- **Validation feedback** and error handling
+- **Label assignment** for file descriptions
+
+### FileGallery Component  
+[src/components/file-upload/file-gallery.tsx](mdc:src/components/file-upload/file-gallery.tsx)
+- **Grid layout** with image previews
+- **File metadata** editing (labels, categories)
+- **Context information** (project, session, test association)
+- **Download and delete** functionality
+
+## Integration Context
+
+Files can be associated with:
+- **Projects**: General project documentation
+- **Areas**: Area-specific files (floor plans, etc.)
+- **Sessions**: Session photos and evidence
+- **Test Results**: Specific test evidence (IR images, readings)
+
+## S3 Bucket Structure
+
+```
+hvac-logger-files/
+├── projects/{projectId}/
+│   ├── general/
+│   ├── areas/{areaId}/
+│   └── sessions/{sessionId}/
+│       ├── general/
+│       └── tests/{testResultId}/
+│           ├── photos/
+│           ├── ir_images/
+│           └── documents/
+```
+
+This organized structure enables easy file management and proper access control based on project membership.

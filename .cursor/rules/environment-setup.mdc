@@ -1,0 +1,73 @@
+---
+description: Environment configuration and deployment setup
+---
+# Environment & Deployment Configuration
+
+## Environment Variables
+
+The application requires these environment variables in `.env.local`:
+
+### Database (Supabase)
+```env
+DATABASE_URL="postgresql://postgres.xxx:password@xxx.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.xxx:password@db.xxx.supabase.co:5432/postgres"
+```
+
+**Important**: Supabase passwords with special characters need URL encoding:
+- `$` → `%24`
+- `@` → `%40`
+- `#` → `%23`
+
+### Authentication (NextAuth.js)
+```env
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-super-secret-key"
+GOOGLE_CLIENT_ID="optional-for-oauth"
+GOOGLE_CLIENT_SECRET="optional-for-oauth"
+```
+
+### File Storage (S3 or Supabase Storage)
+```env
+AWS_ACCESS_KEY_ID="your-aws-key"
+AWS_SECRET_ACCESS_KEY="your-aws-secret"
+AWS_REGION="us-east-1"
+AWS_S3_BUCKET="hvac-logger-files"
+```
+
+## Database Setup Commands
+
+**With Supabase**, use dotenv-cli to ensure environment variables are loaded:
+
+```bash
+# Create tables
+npx dotenv-cli -e .env.local -- npx prisma db push
+
+# Seed demo data
+npx dotenv-cli -e .env.local -- npm run db:seed
+
+# Start development
+npm run dev
+```
+
+## Demo Data
+
+The seed script in [prisma/seed.ts](mdc:prisma/seed.ts) creates:
+- **Organization**: PermitZIP
+- **Demo Users**: admin@permitzip.com / admin123, engineer@permitzip.com / engineer123
+- **Project**: Lincoln Elementary School - 2023 Addition
+- **3 HVAC Units**: RTU-1, RTU-2, RTU-3 (Carrier, 12.5 tons each)
+- **Demo Session**: With 4 test results showing different pass/fail scenarios
+
+## Production Deployment
+
+**Recommended**: Vercel + Supabase
+1. Push to GitHub
+2. Connect to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy
+
+**Alternative**: Docker deployment with PostgreSQL and S3 storage
+
+## IPv4 Requirements
+
+**For Supabase**: IPv4 addon ($10/month) may be required for reliable connectivity from networks without IPv6 support. This resolves common connection timeout issues during development.

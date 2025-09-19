@@ -1,0 +1,277 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String?
+  email       String   @unique
+  password    String?  // For email/password auth
+  image       String?
+  emailVerified DateTime?
+  role        Role     @default(ENGINEER)
+  memberships Membership[]
+  sessions    Session[] @relation("SessionAuthor")
+  accounts    Account[]
+  userSessions UserSession[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Project {
+  id            String       @id @default(cuid())
+  orgId         String
+  name          String
+  address       String?
+  notes         String?
+  status        ProjectStatus @default(ACTIVE)
+  areas         Area[]
+  memberships   Membership[]
+  reports       Report[]
+  files         FileAsset[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  organization  Organization @relation(fields: [orgId], references: [id])
+}
+
+model Area {
+  id        String    @id @default(cuid())
+  projectId String
+  name      String    // e.g., "2023 Addition", "Main Building"
+  sqft      Int?
+  notes     String?
+  units     HvacUnit[]
+  sessions  Session[]
+  files     FileAsset[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model HvacUnit {
+  id          String   @id @default(cuid())
+  areaId      String
+  label       String   // "RTU-1", "AHU-2", etc.
+  make        String?
+  model       String?
+  serialNum   String?
+  stages      Int?     // Number of cooling stages
+  tons        Float?   // Cooling capacity in tons
+  refrigerant String?  // "R-410A", etc.
+  notes       String?
+  area        Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  tests       TestResult[]
+  files       FileAsset[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Session {
+  id               String        @id @default(cuid())
+  areaId           String
+  authorId         String
+  title            String?       // Optional session title
+  startedAt        DateTime      @default(now())
+  endedAt          DateTime?
+  weatherOADryBulb Float?        // Outdoor air dry bulb temp (°F)
+  weatherOARH      Float?        // Outdoor air relative humidity (%)
+  weatherNotes     String?
+  notes            String?
+  status           SessionStatus @default(DRAFT)
+  area             Area          @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  author           User          @relation("SessionAuthor", fields: [authorId], references: [id])
+  tests            TestResult[]
+  files            FileAsset[]
+  reports          Report[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model TestResult {
+  id        String   @id @default(cuid())
+  sessionId String
+  unitId    String?  // nullable for envelope-only tests
+  testType  TestType
+  reading   Json     // Raw test data (validated by Zod schemas)
+  computed  Json?    // Server-side calculations (dew point, CFM/ton, pass/fail)
+  pass      Boolean?
+  notes     String?
+  session   Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  unit      HvacUnit? @relation(fields: [unitId], references: [id])
+  files     FileAsset[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  projectId String
+  areaId    String?  // nullable for multi-area reports
+  sessionId String
+  title     String
+  summary   String?
+  pdfUrl    String?  // S3 path to generated PDF
+  status    ReportStatus @default(DRAFT)
+  project   Project  @relation(fields: [projectId], references: [id])
+  session   Session  @relation(fields: [sessionId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FileAsset {
+  id           String     @id @default(cuid())
+  projectId    String?
+  areaId       String?
+  unitId       String?
+  sessionId    String?
+  testResultId String?
+  filename     String
+  originalName String
+  url          String     // S3 URL
+  mimeType     String
+  fileSize     Int        // bytes
+  label        String?    // User-provided description
+  category     FileCategory @default(OTHER)
+  project      Project?   @relation(fields: [projectId], references: [id])
+  area         Area?      @relation(fields: [areaId], references: [id])
+  unit         HvacUnit?  @relation(fields: [unitId], references: [id])
+  session      Session?   @relation(fields: [sessionId], references: [id])
+  testResult   TestResult? @relation(fields: [testResultId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Membership {
+  id        String        @id @default(cuid())
+  userId    String
+  projectId String
+  role      RoleInProject @default(EDITOR)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([userId, projectId])
+}
+
+// Audit log for tracking changes (optional)
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String   // "CREATE", "UPDATE", "DELETE"
+  entityType String   // "Project", "Session", "TestResult", etc.
+  entityId   String
+  oldValues  Json?
+  newValues  Json?
+  createdAt  DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  ENGINEER
+  VIEWER
+}
+
+enum RoleInProject {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum SessionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum ReportStatus {
+  DRAFT
+  GENERATED
+  APPROVED
+}
+
+enum FileCategory {
+  PHOTO
+  IR_IMAGE
+  NAMEPLATE
+  DOCUMENT
+  OTHER
+}
+
+enum TestType {
+  // Envelope Tests (A1-A4)
+  BUILDING_PRESSURE
+  PRESSURE_DECAY
+  RETURN_CURB_LEAKAGE
+  SLAB_WALL_MOISTURE
+  
+  // HVAC Tests (B1-B6)
+  AIRFLOW_STATIC
+  REFRIGERANT_CIRCUIT
+  COIL_PERFORMANCE
+  FAN_EVAP_RECHECK
+  ECONOMIZER_SEAL
+  DISTRIBUTION_MIXING
+}

@@ -1,0 +1,69 @@
+---
+globs: src/app/api/**/*.ts
+---
+# API Route Patterns & Authentication
+
+All API routes follow consistent patterns for authentication, validation, and error handling.
+
+## Authentication Pattern
+
+Every protected API route uses [src/lib/auth-middleware.ts](mdc:src/lib/auth-middleware.ts):
+
+```typescript
+const authResult = await authenticate(request)
+if ('error' in authResult) {
+  return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+}
+```
+
+## Project Access Control
+
+For project-scoped resources, always check permissions:
+
+```typescript
+const hasAccess = await checkProjectAccess(
+  authResult.user.id,
+  projectId,
+  'EDITOR' // or 'VIEWER', 'OWNER'
+)
+```
+
+## Validation Pattern
+
+All request bodies are validated with Zod schemas from [src/lib/schemas.ts](mdc:src/lib/schemas.ts):
+
+```typescript
+const validatedFields = CreateTestResultSchema.safeParse(body)
+if (!validatedFields.success) {
+  return NextResponse.json(
+    { error: 'Invalid input fields', details: validatedFields.error.flatten() },
+    { status: 400 }
+  )
+}
+```
+
+## Error Response Format
+
+Consistent error responses across all endpoints:
+
+```typescript
+return NextResponse.json(
+  { error: 'Error message', details?: any },
+  { status: httpStatusCode }
+)
+```
+
+## Test Result Computation
+
+When creating test results in [src/app/api/tests/route.ts](mdc:src/app/api/tests/route.ts), always:
+1. Get weather data from session
+2. Run computations via [src/lib/test-computations.ts](mdc:src/lib/test-computations.ts)
+3. Store both raw `reading` and `computed` results
+4. Set `pass` boolean based on computation results
+
+## Role Hierarchy
+- **ADMIN**: Full system access, can create organizations
+- **ENGINEER**: Can create projects, sessions, enter test data
+- **VIEWER**: Read-only access to assigned projects
+
+Project-level roles: **OWNER** > **EDITOR** > **VIEWER**

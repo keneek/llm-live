@@ -1,0 +1,58 @@
+---
+globs: src/components/test-forms/*.tsx,src/app/sessions/**/*.tsx
+---
+# Test Forms & Real-Time Calculations
+
+Test entry forms follow consistent patterns for validation, real-time calculations, and user experience.
+
+## Test Form Structure
+
+All test forms in [src/components/test-forms](mdc:src/components/test-forms) follow this pattern:
+
+1. **Unit Selection** (for HVAC tests) - dropdown with unit specifications
+2. **Form Fields** - validated with Zod schemas from [src/lib/schemas.ts](mdc:src/lib/schemas.ts)
+3. **Real-Time Calculations** - using [src/lib/calculations.ts](mdc:src/lib/calculations.ts)
+4. **Live Results Display** - color-coded pass/fail indicators
+5. **Help Text** - testing guidelines and best practices
+
+## Real-Time Calculation Pattern
+
+Forms use `useEffect` to recalculate when values change:
+
+```typescript
+useEffect(() => {
+  const { value1, value2 } = watchedValues
+  if (value1 > 0 && value2 > 0) {
+    const result = calculateSomething(value1, value2)
+    const check = checkPassFail(result)
+    setComputed({ calculations: {}, checks: {}, pass: check.pass })
+  }
+}, [watchedValues])
+```
+
+## Form Validation
+
+- **React Hook Form** with **Zod resolvers** for type-safe validation
+- **Real-time feedback** on invalid inputs
+- **Unit-aware validation** (temperature ranges, pressure limits)
+- **Required field indicators** and helpful placeholder text
+
+## Visual Feedback
+
+Pass/fail results show with color-coded cards:
+- **Green border** + green badges for passing tests
+- **Red border** + red badges for failing tests  
+- **Live calculations** update as user types
+- **Engineering units** clearly labeled (°F, %RH, in. w.c., CFM, PSI)
+
+## Test Entry Workflow
+
+The main session interface at [src/app/sessions/[id]/page.tsx](mdc:src/app/sessions/[id]/page.tsx) uses:
+- **Tabbed interface**: Overview | HVAC Tests | Envelope Tests | Media | Summary
+- **Test selection grid** with priority indicators and completion counts
+- **Integration with file uploads** for evidence collection
+- **Automatic session statistics** and KPI calculations
+
+## File Upload Integration
+
+Test forms can be extended to include file uploads by adding the FileUpload component from [src/components/file-upload](mdc:src/components/file-upload) with proper context (projectId, sessionId, testResultId).
